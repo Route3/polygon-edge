@@ -2,6 +2,8 @@ module github.com/0xPolygon/polygon-edge
 
 go 1.18
 
+replace github.com/0xPolygon/go-ibft => D:\Vuk\Projects\nubank-incident\go-ibft
+
 require (
 	github.com/btcsuite/btcd v0.22.1
 	github.com/containerd/cgroups v1.0.4 // indirect
@@ -189,6 +191,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20220617031537-928513b29760 // indirect
+	golang.org/dl v0.0.0-20230906154927-cd520cc22eb4 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20221012135044-0b7e1fb9d458 // indirect
 	golang.org/x/oauth2 v0.0.0-20221006150949-b44042a4b9c1 // indirect
