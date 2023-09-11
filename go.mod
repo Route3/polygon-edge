@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/secretmanager v1.8.0
-	github.com/Route3/nubank-ibft v0.0.0-20230911063404-8a7920c4183b
+	github.com/Route3/nubank-ibft v0.0.0-20230911065044-a080f2b9b799
 	github.com/armon/go-metrics v0.4.1
 	github.com/aws/aws-sdk-go v1.44.61
 	github.com/btcsuite/btcd v0.22.1

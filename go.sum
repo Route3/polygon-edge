@@ -69,6 +69,8 @@ github.com/Microsoft/go-winio v0.5.1/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpz
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
 github.com/Route3/nubank-ibft v0.0.0-20230911063404-8a7920c4183b h1:xxiDBtxzregwU3BfUI0K+U9HA4wX9BAPaOXbPWXvbAY=
 github.com/Route3/nubank-ibft v0.0.0-20230911063404-8a7920c4183b/go.mod h1:mWZx3E1G03ZacaHp+ajHsSKx9yr+8FpDKRBE1xWbBs8=
+github.com/Route3/nubank-ibft v0.0.0-20230911065044-a080f2b9b799 h1:t+OImMleI5LYdfRn1tbBiNqvgSuGj2pUjGZZokhMOLM=
+github.com/Route3/nubank-ibft v0.0.0-20230911065044-a080f2b9b799/go.mod h1:mWZx3E1G03ZacaHp+ajHsSKx9yr+8FpDKRBE1xWbBs8=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
