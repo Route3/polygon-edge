@@ -14,6 +14,7 @@ import (
 	"github.com/0xPolygon/polygon-edge/command/secrets"
 	"github.com/0xPolygon/polygon-edge/command/server"
 	"github.com/0xPolygon/polygon-edge/command/status"
+	"github.com/0xPolygon/polygon-edge/command/storage"
 	"github.com/0xPolygon/polygon-edge/command/txpool"
 	"github.com/0xPolygon/polygon-edge/command/version"
 	"github.com/0xPolygon/polygon-edge/command/whitelist"
@@ -52,6 +53,7 @@ func (rc *RootCommand) registerSubCommands() {
 		server.GetCommand(),
 		whitelist.GetCommand(),
 		license.GetCommand(),
+		storage.GetExportRawTxsCommand(),
 	)
 }
 
