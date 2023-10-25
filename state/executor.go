@@ -260,9 +260,11 @@ func (t *Transition) Write(txn *types.Transaction) error {
 	// Make a local copy and apply the transaction
 	msg := txn.Copy()
 
+	t.logger.Debug("Applying tx", "hash", msg.Hash.String())
+
 	result, e := t.Apply(msg)
 	if e != nil {
-		t.logger.Error("failed to apply tx", "err", e)
+		t.logger.Error("failed to apply tx", "err", e, "tx_hash", msg.Hash.String())
 
 		return e
 	}

@@ -31,6 +31,9 @@ type Config struct {
 	JSONRPCBatchRequestLimit uint64     `json:"json_rpc_batch_request_limit" yaml:"json_rpc_batch_request_limit"`
 	JSONRPCBlockRangeLimit   uint64     `json:"json_rpc_block_range_limit" yaml:"json_rpc_block_range_limit"`
 	JSONLogFormat            bool       `json:"json_log_format" yaml:"json_log_format"`
+	TxPoolEngine             string     `json:"tx_pool_engine" yaml:"tx_pool_engine"`
+	TxPoolCsv                string     `json:"tx_pool_csv" yaml:"tx_pool_csv"`
+	TxPoolNumOfValidators    int        `json:"tx_pool_num_of_validators" yaml:"tx_pool_num_of_validators"`
 }
 
 // Telemetry holds the config details for metric services.
@@ -111,6 +114,9 @@ func DefaultConfig() *Config {
 		LogFilePath:              "",
 		JSONRPCBatchRequestLimit: DefaultJSONRPCBatchRequestLimit,
 		JSONRPCBlockRangeLimit:   DefaultJSONRPCBlockRangeLimit,
+		TxPoolEngine:             "",
+		TxPoolCsv:                "tx.csv",
+		TxPoolNumOfValidators:    0,
 	}
 }
 

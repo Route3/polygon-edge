@@ -41,6 +41,10 @@ type Config struct {
 	JSONLogFormat bool
 
 	LogFilePath string
+
+	TxPoolEngine  string
+	TxPoolCsvFile string
+	TxPoolValNum  int
 }
 
 // Telemetry holds the config details for metric services

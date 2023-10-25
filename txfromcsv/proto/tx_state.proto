@@ -1,0 +1,14 @@
+syntax = "proto3";
+package v1;
+
+option go_package = "txfromcsv/proto";
+
+import "google/protobuf/empty.proto";
+
+service TxOps {
+  rpc TxPop(TxData) returns (google.protobuf.Empty);
+}
+
+message TxData {
+  string TxHash = 1;
+}

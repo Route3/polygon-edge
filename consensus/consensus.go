@@ -70,6 +70,18 @@ type Params struct {
 	Logger         hclog.Logger
 	SecretsManager secrets.SecretsManager
 	BlockTime      uint64
+
+	// TxPoolEngine provides an option to insert a custom (mock) txpool.
+	// The only option for now are default and csv
+	TxPoolEngine string
+
+	// TxPoolCsvFile sets the location of the csv file containing the list of raw transactions
+	// as a dump from leveldb
+	TxPoolCsvFile string
+
+	// TxPoolVal num is the total number of validators defined in the genesis file.
+	// Needed only for custom txpool instances
+	TxPoolValNum int
 }
 
 // Factory is the factory function to create a discovery consensus

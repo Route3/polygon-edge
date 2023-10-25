@@ -418,6 +418,9 @@ func (s *Server) setupConsensus() error {
 			Logger:         s.logger,
 			SecretsManager: s.secretsManager,
 			BlockTime:      s.config.BlockTime,
+			TxPoolEngine:   s.config.TxPoolEngine,
+			TxPoolCsvFile:  s.config.TxPoolCsvFile,
+			TxPoolValNum:   s.config.TxPoolValNum,
 		},
 	)
 

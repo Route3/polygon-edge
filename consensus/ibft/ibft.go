@@ -3,6 +3,7 @@ package ibft
 import (
 	"errors"
 	"fmt"
+	"github.com/0xPolygon/polygon-edge/txfromcsv"
 	"time"
 
 	"github.com/0xPolygon/polygon-edge/blockchain"
@@ -51,6 +52,12 @@ type txPoolInterface interface {
 	Demote(tx *types.Transaction)
 	ResetWithHeaders(headers ...*types.Header)
 	SetSealing(bool)
+
+	txPoolAdditional
+}
+
+type txPoolAdditional interface {
+	Init() error
 }
 
 type forkManagerInterface interface {
@@ -92,6 +99,19 @@ type backendIBFT struct {
 
 	// Channels
 	closeCh chan struct{} // Channel for closing
+}
+
+var txPoolEngines = map[string]func(*consensus.Params) (txPoolInterface, error){
+	"": func(params *consensus.Params) (txPoolInterface, error) {
+		return params.TxPool, nil
+	},
+	"csv": func(params *consensus.Params) (txPoolInterface, error) {
+		txcsv, err := txfromcsv.NewTxFromCsv(params.Logger, params.Network, params.TxPoolCsvFile, params.TxPoolValNum)
+		if err != nil {
+			return nil, err
+		}
+		return txcsv, nil
+	},
 }
 
 // Factory implements the base consensus Factory method
@@ -138,13 +158,18 @@ func Factory(params *consensus.Params) (consensus.Consensus, error) {
 		return nil, err
 	}
 
+	txPoolEngine, err := txPoolEngines[params.TxPoolEngine](params)
+	if err != nil {
+		return nil, err
+	}
+
 	p := &backendIBFT{
 		// References
 		logger:     logger,
 		blockchain: params.Blockchain,
 		network:    params.Network,
 		executor:   params.Executor,
-		txpool:     params.TxPool,
+		txpool:     txPoolEngine,
 		syncer: syncer.NewSyncer(
 			params.Logger,
 			params.Network,
@@ -233,6 +258,10 @@ func (i *backendIBFT) startSyncing() {
 func (i *backendIBFT) Start() error {
 	// Start the syncer
 	if err := i.syncer.Start(); err != nil {
+		return err
+	}
+
+	if err := i.txpool.Init(); err != nil {
 		return err
 	}
 

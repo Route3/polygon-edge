@@ -221,6 +221,27 @@ func setFlags(cmd *cobra.Command) {
 		"write all logs to the file at specified location instead of writing them to console",
 	)
 
+	cmd.Flags().StringVar(
+		&params.rawConfig.TxPoolEngine,
+		txPoolEngine,
+		defaultConfig.TxPoolEngine,
+		"set custom txpool engine",
+	)
+
+	cmd.Flags().StringVar(
+		&params.rawConfig.TxPoolCsv,
+		txPoolCsv,
+		defaultConfig.TxPoolCsv,
+		"txpool engine dumped transactions csv file location",
+	)
+
+	cmd.Flags().IntVar(
+		&params.rawConfig.TxPoolNumOfValidators,
+		txPoolValNum,
+		defaultConfig.TxPoolNumOfValidators,
+		"total number of validators in genesis, needed for mock txpool instances",
+	)
+
 	setLegacyFlags(cmd)
 
 	setDevFlags(cmd)

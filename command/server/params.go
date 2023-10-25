@@ -38,6 +38,9 @@ const (
 	devFlag                      = "dev"
 	corsOriginFlag               = "access-control-allow-origins"
 	logFileLocationFlag          = "log-to"
+	txPoolEngine                 = "tx-pool-engine"
+	txPoolCsv                    = "tx-pool-csv"
+	txPoolValNum                 = "tx-pool-total-validators"
 )
 
 // Flags that are deprecated, but need to be preserved for
@@ -87,6 +90,10 @@ type serverParams struct {
 	secretsConfig *secrets.SecretsManagerConfig
 
 	logFileLocation string
+}
+
+func (p *serverParams) isCustomTxPoolInstanceSet() bool {
+	return p.rawConfig.TxPoolEngine != ""
 }
 
 func (p *serverParams) isMaxPeersSet() bool {
@@ -178,5 +185,8 @@ func (p *serverParams) generateConfig() *server.Config {
 		LogLevel:           hclog.LevelFromString(p.rawConfig.LogLevel),
 		JSONLogFormat:      p.rawConfig.JSONLogFormat,
 		LogFilePath:        p.logFileLocation,
+		TxPoolEngine:       p.rawConfig.TxPoolEngine,
+		TxPoolCsvFile:      p.rawConfig.TxPoolCsv,
+		TxPoolValNum:       p.rawConfig.TxPoolNumOfValidators,
 	}
 }

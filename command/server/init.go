@@ -58,6 +58,12 @@ func (p *serverParams) initRawParams() error {
 		p.initDevMode()
 	}
 
+	if p.isCustomTxPoolInstanceSet() {
+		if p.rawConfig.TxPoolNumOfValidators == 0 {
+			return fmt.Errorf("the number of validators must be set on custom txpool instances")
+		}
+	}
+
 	p.initPeerLimits()
 	p.initLogFileLocation()
 

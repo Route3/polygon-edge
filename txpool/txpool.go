@@ -518,6 +518,10 @@ func (p *TxPool) ResetWithHeaders(headers ...*types.Header) {
 	p.processEvent(e)
 }
 
+func (p *TxPool) Init() error {
+	return nil
+}
+
 // processEvent collects the latest nonces for each account containted
 // in the received event. Resets all known accounts with the new nonce.
 func (p *TxPool) processEvent(event *blockchain.Event) {
