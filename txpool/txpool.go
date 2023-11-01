@@ -472,11 +472,14 @@ func (p *TxPool) Drop(tx *types.Transaction) {
 	clearAccountQueue(dropped)
 
 	p.eventManager.signalEvent(proto.EventType_DROPPED, tx.Hash)
-	p.logger.Debug("dropped account txs",
-		"num", droppedCount,
-		"next_nonce", nextNonce,
-		"address", tx.From.String(),
-	)
+
+	if p.logger.IsDebug() {
+		p.logger.Debug("dropped account txs",
+			"num", droppedCount,
+			"next_nonce", nextNonce,
+			"address", tx.From.String(),
+		)
+	}
 }
 
 // Demote excludes an account from being further processed during block building
@@ -485,10 +488,12 @@ func (p *TxPool) Drop(tx *types.Transaction) {
 func (p *TxPool) Demote(tx *types.Transaction) {
 	account := p.accounts.get(tx.From)
 	if account.Demotions() >= maxAccountDemotions {
-		p.logger.Debug(
-			"Demote: threshold reached - dropping account",
-			"addr", tx.From.String(),
-		)
+		if p.logger.IsDebug() {
+			p.logger.Debug(
+				"Demote: threshold reached - dropping account",
+				"addr", tx.From.String(),
+			)
+		}
 
 		p.Drop(tx)
 
@@ -691,10 +696,12 @@ func (p *TxPool) pruneAccountsWithNonceHoles() {
 // successful, an account is created for this address
 // (only once) and an enqueueRequest is signaled.
 func (p *TxPool) addTx(origin txOrigin, tx *types.Transaction) error {
-	p.logger.Debug("add tx",
-		"origin", origin.String(),
-		"hash", tx.Hash.String(),
-	)
+	if p.logger.IsDebug() {
+		p.logger.Debug("add tx",
+			"origin", origin.String(),
+			"hash", tx.Hash.String(),
+		)
+	}
 
 	// validate incoming tx
 	if err := p.validateTx(tx); err != nil {
@@ -753,7 +760,9 @@ func (p *TxPool) handleEnqueueRequest(req enqueueRequest) {
 		return
 	}
 
-	p.logger.Debug("enqueue request", "hash", tx.Hash.String())
+	if p.logger.IsDebug() {
+		p.logger.Debug("enqueue request", "hash", tx.Hash.String())
+	}
 
 	p.gauge.increase(slotsRequired(tx))
 
@@ -777,7 +786,10 @@ func (p *TxPool) handlePromoteRequest(req promoteRequest) {
 
 	// promote enqueued txs
 	promoted, pruned := account.promote()
-	p.logger.Debug("promote request", "promoted", promoted, "addr", addr.String())
+
+	if p.logger.IsDebug() {
+		p.logger.Debug("promote request", "promoted", promoted, "addr", addr.String())
+	}
 
 	p.index.remove(pruned...)
 	p.gauge.decrease(slotsRequired(pruned...))
@@ -821,7 +833,9 @@ func (p *TxPool) addGossipTx(obj interface{}, _ peer.ID) {
 	// add tx
 	if err := p.addTx(gossip, tx); err != nil {
 		if errors.Is(err, ErrAlreadyKnown) {
-			p.logger.Debug("rejecting known tx (gossip)", "hash", tx.Hash.String())
+			if p.logger.IsDebug() {
+				p.logger.Debug("rejecting known tx (gossip)", "hash", tx.Hash.String())
+			}
 
 			return
 		}
