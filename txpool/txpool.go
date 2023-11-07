@@ -691,8 +691,9 @@ func (p *TxPool) signalPruning() {
 
 func (p *TxPool) pruneAccountsWithNonceHoles() {
 	p.accounts.Range(
-		func(_, value interface{}) bool {
+		func(accountOwner, value interface{}) bool {
 			account, _ := value.(*account)
+			owner, _ := accountOwner.(types.Address)
 
 			account.enqueued.lock(true)
 			defer account.enqueued.unlock()
@@ -711,6 +712,13 @@ func (p *TxPool) pruneAccountsWithNonceHoles() {
 
 			p.index.remove(removed...)
 			p.gauge.decrease(slotsRequired(removed...))
+
+			p.logger.Info("Pruning account transactions",
+				"account", owner.String(),
+				"removed_size", len(removed),
+				"enqueued", account.enqueued.length(),
+				"promoted", account.promoted.length(),
+			)
 
 			return true
 		},
@@ -733,6 +741,12 @@ func (p *TxPool) addTx(origin txOrigin, tx *types.Transaction) error {
 	}
 
 	if p.gauge.highPressure() {
+		p.logger.Info("High pressure pruning",
+			"height", p.gauge.read(),
+			"max", p.gauge.max,
+			"from", tx.From.String(),
+		)
+
 		p.signalPruning()
 
 		//	only accept transactions with expected nonce
