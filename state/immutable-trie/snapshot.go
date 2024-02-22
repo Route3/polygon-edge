@@ -74,69 +74,73 @@ func (s *Snapshot) GetCode(hash types.Hash) ([]byte, bool) {
 
 func (s *Snapshot) Commit(objs []*state.Object) (state.Snapshot, []byte) {
 	batch := s.state.storage.Batch()
-
 	tt := s.trie.Txn(s.state.storage)
 	tt.batch = batch
 
-	arena := accountArenaPool.Get()
-	defer accountArenaPool.Put(arena)
+	accountArena := accountArenaPool.Get()
+	defer accountArenaPool.Put(accountArena)
 
-	ar1 := stateArenaPool.Get()
-	defer stateArenaPool.Put(ar1)
+	stateArena := stateArenaPool.Get()
+	defer stateArenaPool.Put(stateArena)
 
 	for _, obj := range objs {
+		addressHash := hashit(obj.Address.Bytes())
+
 		if obj.Deleted {
-			tt.Delete(hashit(obj.Address.Bytes()))
-		} else {
-			account := state.Account{
-				Balance:  obj.Balance,
-				Nonce:    obj.Nonce,
-				CodeHash: obj.CodeHash.Bytes(),
-				Root:     obj.Root, // old root
-			}
-
-			if len(obj.Storage) != 0 {
-				trie, err := s.state.newTrieAt(obj.Root)
-				if err != nil {
-					panic(err)
-				}
-
-				localTxn := trie.Txn(s.state.storage)
-				localTxn.batch = batch
-
-				for _, entry := range obj.Storage {
-					k := hashit(entry.Key)
-					if entry.Deleted {
-						localTxn.Delete(k)
-					} else {
-						vv := ar1.NewBytes(bytes.TrimLeft(entry.Val, "\x00"))
-						localTxn.Insert(k, vv.MarshalTo(nil))
-					}
-				}
-
-				accountStateRoot, _ := localTxn.Hash()
-				accountStateTrie := localTxn.Commit()
-
-				// Add this to the cache
-				s.state.AddState(types.BytesToHash(accountStateRoot), accountStateTrie)
-
-				account.Root = types.BytesToHash(accountStateRoot)
-			}
-
-			if obj.DirtyCode {
-				s.state.SetCode(obj.CodeHash, obj.Code)
-			}
-
-			vv := account.MarshalWith(arena)
-			data := vv.MarshalTo(nil)
-
-			tt.Insert(hashit(obj.Address.Bytes()), data)
-			arena.Reset()
+			tt.Delete(addressHash)
+			continue
 		}
+
+		account := state.Account{
+			Balance:  obj.Balance,
+			Nonce:    obj.Nonce,
+			CodeHash: obj.CodeHash.Bytes(),
+			Root:     obj.Root, // old root
+		}
+
+		// Update account storage
+		if len(obj.Storage) != 0 {
+			trie, err := s.state.newTrieAt(obj.Root)
+			if err != nil {
+				panic(err)
+			}
+
+			localTxn := trie.Txn(s.state.storage)
+			localTxn.batch = batch
+
+			for _, entry := range obj.Storage {
+				keyHash := hashit(entry.Key)
+				if entry.Deleted {
+					localTxn.Delete(keyHash)
+				} else {
+					valueBytes := bytes.TrimLeft(entry.Val, "\x00")
+					vv := stateArena.NewBytes(valueBytes)
+					localTxn.Insert(keyHash, vv.MarshalTo(nil))
+				}
+			}
+
+			accountStateRoot, _ := localTxn.Hash()
+			accountStateTrie := localTxn.Commit()
+
+			// Add to cache
+			s.state.AddState(types.BytesToHash(accountStateRoot), accountStateTrie)
+
+			account.Root = types.BytesToHash(accountStateRoot)
+		}
+
+		// Set code if dirty
+		if obj.DirtyCode {
+			s.state.SetCode(obj.CodeHash, obj.Code)
+		}
+
+		// Marshal account data
+		data := account.MarshalWith(accountArena).MarshalTo(nil)
+
+		// Insert into trie
+		tt.Insert(addressHash, data)
 	}
 
 	root, _ := tt.Hash()
-
 	nTrie := tt.Commit()
 
 	// Write all the entries to db

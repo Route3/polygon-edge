@@ -169,20 +169,16 @@ func (t *Txn) lookup(node interface{}, key []byte) (Node, []byte) {
 				panic(err)
 			}
 
-			if !ok {
-				return nil, nil
+			if ok {
+				return t.lookup(nc, key)
 			}
-
-			_, res := t.lookup(nc, key)
-
-			return nc, res
+			return nil, nil
 		}
 
 		if len(key) == 0 {
 			return nil, n.buf
-		} else {
-			return nil, nil
 		}
+		return nil, nil
 
 	case *ShortNode:
 		plen := len(n.key)
@@ -190,23 +186,17 @@ func (t *Txn) lookup(node interface{}, key []byte) (Node, []byte) {
 			return nil, nil
 		}
 
-		child, res := t.lookup(n.child, key[plen:])
-
-		if child != nil {
-			n.child = child
-		}
-
-		return nil, res
+		return t.lookup(n.child, key[plen:])
 
 	case *FullNode:
 		if len(key) == 0 {
 			return t.lookup(n.value, key)
 		}
 
-		child, res := t.lookup(n.getEdge(key[0]), key[1:])
-
-		if child != nil {
-			n.children[key[0]] = child
+		child := n.getEdge(key[0])
+		newChild, res := t.lookup(child, key[1:])
+		if newChild != nil {
+			n.children[key[0]] = newChild
 		}
 
 		return nil, res
@@ -222,10 +212,10 @@ func (t *Txn) writeNode(n *FullNode) *FullNode {
 	}
 
 	nc := &FullNode{
-		epoch: t.epoch,
-		value: n.value,
+		epoch:    t.epoch,
+		value:    n.value,
+		children: n.children,
 	}
-	copy(nc.children[:], n.children[:])
 
 	return nc
 }
@@ -240,18 +230,15 @@ func (t *Txn) Insert(key, value []byte) {
 func (t *Txn) insert(node Node, search, value []byte) Node {
 	switch n := node.(type) {
 	case nil:
-		// NOTE, this only happens with the full node
 		if len(search) == 0 {
 			v := &ValueNode{}
 			v.buf = make([]byte, len(value))
 			copy(v.buf, value)
-
 			return v
-		} else {
-			return &ShortNode{
-				key:   search,
-				child: t.insert(nil, nil, value),
-			}
+		}
+		return &ShortNode{
+			key:   search,
+			child: t.insert(nil, nil, value),
 		}
 
 	case *ValueNode:
@@ -260,69 +247,50 @@ func (t *Txn) insert(node Node, search, value []byte) Node {
 			if err != nil {
 				panic(err)
 			}
-
 			if !ok {
 				return nil
 			}
-
 			node = nc
-
 			return t.insert(node, search, value)
 		}
-
 		if len(search) == 0 {
 			v := &ValueNode{}
 			v.buf = make([]byte, len(value))
 			copy(v.buf, value)
-
 			return v
-		} else {
-			b := t.insert(&FullNode{epoch: t.epoch, value: n}, search, value)
-
-			return b
 		}
+		b := t.insert(&FullNode{epoch: t.epoch, value: n}, search, value)
+		return b
 
 	case *ShortNode:
 		plen := prefixLen(search, n.key)
 		if plen == len(n.key) {
-			// Keep this node as is and insert to child
 			child := t.insert(n.child, search[plen:], value)
-
 			return &ShortNode{key: n.key, child: child}
-		} else {
-			// Introduce a new branch
-			b := FullNode{epoch: t.epoch}
-			if len(n.key) > plen+1 {
-				b.setEdge(n.key[plen], &ShortNode{key: n.key[plen+1:], child: n.child})
-			} else {
-				b.setEdge(n.key[plen], n.child)
-			}
-
-			child := t.insert(&b, search[plen:], value)
-
-			if plen == 0 {
-				return child
-			} else {
-				return &ShortNode{key: search[:plen], child: child}
-			}
 		}
+		b := FullNode{epoch: t.epoch}
+		if len(n.key) > plen+1 {
+			b.setEdge(n.key[plen], &ShortNode{key: n.key[plen+1:], child: n.child})
+		} else {
+			b.setEdge(n.key[plen], n.child)
+		}
+		child := t.insert(&b, search[plen:], value)
+		if plen == 0 {
+			return child
+		}
+		return &ShortNode{key: search[:plen], child: child}
 
 	case *FullNode:
 		b := t.writeNode(n)
-
 		if len(search) == 0 {
 			b.value = t.insert(b.value, nil, value)
-
-			return b
-		} else {
-			k := search[0]
-			child := n.getEdge(k)
-			newChild := t.insert(child, search[1:], value)
-
-			b.setEdge(k, newChild)
-
 			return b
 		}
+		k := search[0]
+		child := n.getEdge(k)
+		newChild := t.insert(child, search[1:], value)
+		b.setEdge(k, newChild)
+		return b
 
 	default:
 		panic(fmt.Sprintf("unknown node type %v", n))

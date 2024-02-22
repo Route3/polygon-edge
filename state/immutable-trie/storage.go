@@ -189,77 +189,56 @@ func GetNode(root []byte, storage Storage) (Node, bool, error) {
 		return nil, false, fmt.Errorf("storage item should be an array")
 	}
 
-	n, err := decodeNode(v, storage)
+	n, err := decodeNode(v)
 
 	return n, err == nil, err
 }
 
-func decodeNode(v *fastrlp.Value, s Storage) (Node, error) {
+func decodeNode(v *fastrlp.Value) (Node, error) {
 	if v.Type() == fastrlp.TypeBytes {
-		vv := &ValueNode{
-			hash: true,
-		}
-		vv.buf = append(vv.buf[:0], v.Raw()...)
-
-		return vv, nil
+		return &ValueNode{hash: true, buf: append(make([]byte, 0, len(v.Raw())), v.Raw()...)}, nil
 	}
 
-	var err error
-
 	ll := v.Elems()
-	if ll == 2 {
+	switch ll {
+	case 2:
 		key := v.Get(0)
 		if key.Type() != fastrlp.TypeBytes {
 			return nil, fmt.Errorf("short key expected to be bytes")
 		}
+		keyBytes := decodeCompact(key.Raw())
 
-		// this can be either an array (extension node)
-		// or bytes (leaf node)
-		nc := &ShortNode{}
-		nc.key = decodeCompact(key.Raw())
-
-		if hasTerminator(nc.key) {
-			// value node
+		if hasTerminator(keyBytes) {
 			if v.Get(1).Type() != fastrlp.TypeBytes {
 				return nil, fmt.Errorf("short leaf value expected to be bytes")
 			}
-
-			vv := &ValueNode{}
-			vv.buf = append(vv.buf, v.Get(1).Raw()...)
-			nc.child = vv
-		} else {
-			nc.child, err = decodeNode(v.Get(1), s)
-			if err != nil {
-				return nil, err
-			}
+			return &ShortNode{key: keyBytes, child: &ValueNode{buf: append(make([]byte, 0, len(v.Get(1).Raw())), v.Get(1).Raw()...)}}, nil
 		}
-
-		return nc, nil
-	} else if ll == 17 {
-		// full node
+		child, err := decodeNode(v.Get(1))
+		if err != nil {
+			return nil, err
+		}
+		return &ShortNode{key: keyBytes, child: child}, nil
+	case 17:
 		nc := &FullNode{}
 		for i := 0; i < 16; i++ {
 			if v.Get(i).Type() == fastrlp.TypeBytes && len(v.Get(i).Raw()) == 0 {
-				// empty
 				continue
 			}
-			nc.children[i], err = decodeNode(v.Get(i), s)
+			child, err := decodeNode(v.Get(i))
 			if err != nil {
 				return nil, err
 			}
+			nc.children[i] = child
 		}
-
 		if v.Get(16).Type() != fastrlp.TypeBytes {
 			return nil, fmt.Errorf("full node value expected to be bytes")
 		}
 		if len(v.Get(16).Raw()) != 0 {
-			vv := &ValueNode{}
-			vv.buf = append(vv.buf[:0], v.Get(16).Raw()...)
-			nc.value = vv
+			nc.value = &ValueNode{buf: append(make([]byte, 0, len(v.Get(16).Raw())), v.Get(16).Raw()...)}
 		}
-
 		return nc, nil
+	default:
+		return nil, fmt.Errorf("node has incorrect number of leafs")
 	}
-
-	return nil, fmt.Errorf("node has incorrect number of leafs")
 }
